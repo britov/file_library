@@ -50,7 +50,7 @@ class CustomSetModel with ChangeNotifier {
   }
 
   void updateCustomSets(CustomSet set) {
-    var index = _sets.indexOf(set);
+    var index = _sets.indexWhere((value) => value.uuid == set.uuid);
     _sets = _sets.rebuild((b) => b
       ..removeAt(index)
       ..insert(index, set)
@@ -84,6 +84,7 @@ abstract class CustomSetTag implements Built<CustomSetTag, CustomSetTagBuilder> 
 }
 
 abstract class CustomSet implements Built<CustomSet, CustomSetBuilder> {
+  String get uuid;
   String get title;
   @nullable BuiltList<CustomSetTag> get tags;
   BuiltList<LibraryItemFile> get files;

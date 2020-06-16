@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:teacher_library/model/custom_set.dart';
+import 'package:uuid/uuid.dart';
 import 'model/library.dart';
 
 void main() {
@@ -517,6 +518,7 @@ class _CustomSetDetailPageState extends State<CustomSetDetailPage> {
                   child: Text(widget.set == null ? 'CREATE' : 'SAVE'),
                   onPressed: () {
                     Navigator.pop(context, CustomSet((b) => b
+                        ..uuid = widget.set.uuid ?? Uuid().v1()
                         ..title = titleController.text ?? 'Untitled'
                         ..files = ListBuilder(files)
                     ));
