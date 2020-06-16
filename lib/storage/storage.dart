@@ -47,11 +47,11 @@ class LibraryLocalNoSqlStorage {
   Future<bool> saveCustomSet(List<CustomSet> files) => _save(_recordRefCustomSet, files);
 
 
-  Future<List<LibraryItemCategory>> getLibraryItemCategory() => _get(_recordRefLibraryItemCategory);
-  Future<List<LibraryItemType>> getLibraryItemType() => _get(_recordRefLibraryItemType);
-  Future<List<LibraryItemFile>> getLibraryItemFile() => _get(_recordRefLibraryItemFile);
-  Future<List<CustomSetTag>> getCustomSetTag() => _get(_recordRefCustomSetTag);
-  Future<List<CustomSet>> getCustomSet() => _get(_recordRefCustomSet);
+  Future<BuiltList<LibraryItemCategory>> getLibraryItemCategory() => _get(_recordRefLibraryItemCategory);
+  Future<BuiltList<LibraryItemType>> getLibraryItemType() => _get(_recordRefLibraryItemType);
+  Future<BuiltList<LibraryItemFile>> getLibraryItemFile() => _get(_recordRefLibraryItemFile);
+  Future<BuiltList<CustomSetTag>> getCustomSetTag() => _get(_recordRefCustomSetTag);
+  Future<BuiltList<CustomSet>> getCustomSet() => _get(_recordRefCustomSet);
 
 
   Future<bool> _save<T>(RecordRef<String, Map<String, dynamic>> recordRefFiles, List<T> files) async {
@@ -63,7 +63,7 @@ class LibraryLocalNoSqlStorage {
     return true;
   }
 
-  Future<List<T>> _get<T>(RecordRef<String, Map<String, dynamic>> recordRefFiles) async {
+  Future<BuiltList<T>> _get<T>(RecordRef<String, Map<String, dynamic>> recordRefFiles) async {
     Map<String, dynamic> value = await recordRefFiles.get(await _database);
     print('get data $value');
 
@@ -71,8 +71,7 @@ class LibraryLocalNoSqlStorage {
       return null;
     }
 
-    BuiltList<T> deserialize = serializers.deserialize(value[keyPrefix], specifiedType: FullType(BuiltList, [FullType(T)]));
-    return deserialize.toList();
+    return serializers.deserialize(value[keyPrefix], specifiedType: FullType(BuiltList, [FullType(T)]));
   }
 }
 

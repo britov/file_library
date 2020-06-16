@@ -141,7 +141,13 @@ class _LibraryPageState extends State<LibraryPage> {
           child: FloatingActionButton(
             child: Icon(Icons.add),
             onPressed: () async {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => AddFilePage()));
+              File file = await FilePicker.getFile(type: FileType.any);
+              if (file != null) {
+                var category = await Navigator.push(context, MaterialPageRoute(builder: (_) => SelectCategoryPage()));
+                if (category != null) {
+                  context.read<LibraryModel>().addNewFile(file, category);
+                }
+              }
             },
           ),
         )
@@ -196,12 +202,12 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 }
 
-class AddFilePage extends StatefulWidget {
+class SelectCategoryPage extends StatefulWidget {
   @override
-  _AddFilePageState createState() => _AddFilePageState();
+  _SelectCategoryPageState createState() => _SelectCategoryPageState();
 }
 
-class _AddFilePageState extends State<AddFilePage> {
+class _SelectCategoryPageState extends State<SelectCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
@@ -235,9 +241,7 @@ class _AddFilePageState extends State<AddFilePage> {
                       for (final category in categories)
                         ListTile(
                           onTap: () async {
-                            File file = await FilePicker.getFile(type: FileType.any);
-                            context.read<LibraryModel>().addNewFile(file, category);
-                            Navigator.pop(context);
+                            Navigator.pop(context, category);
                           },
                           title: Text(category.title),
                         ),
@@ -268,7 +272,7 @@ class _AddFilePageState extends State<AddFilePage> {
     var category =
         await Navigator.of(context).push(MaterialPageRoute(builder: (_) => EnterTextPage(label: 'Category title')));
     if (category is String && category.isNotEmpty) {
-      var categoryItem = context.read<LibraryModel>().addNewCategory(category);
+      context.read<LibraryModel>().addNewCategory(category);
     }
   }
 }
