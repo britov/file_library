@@ -12,7 +12,7 @@ import '../model/serializers.dart';
 
 
 
-class LibraryLocalNoSqlStorage {
+class LocalNoSqlStorage {
   static const profilesDocumentKey = 'library5';
   static const keyPrefix = 'list';
 
@@ -25,7 +25,7 @@ class LibraryLocalNoSqlStorage {
   Database _databaseInstance;
   Future<Database> get _database async => _databaseInstance ??= await _openDatabase();
 
-  LibraryLocalNoSqlStorage() :
+  LocalNoSqlStorage() :
         _recordRefLibraryItemCategory = stringMapStoreFactory.store(profilesDocumentKey).record('LibraryItemCategory'),
         _recordRefLibraryItemType = stringMapStoreFactory.store(profilesDocumentKey).record('LibraryItemType'),
         _recordRefLibraryItemFile = stringMapStoreFactory.store(profilesDocumentKey).record('LibraryItemFile'),

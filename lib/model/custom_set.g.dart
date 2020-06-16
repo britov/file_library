@@ -63,12 +63,18 @@ class _$CustomSetSerializer implements StructuredSerializer<CustomSet> {
       'title',
       serializers.serialize(object.title,
           specifiedType: const FullType(String)),
-      'tags',
-      serializers.serialize(object.tags,
-          specifiedType:
-              const FullType(BuiltList, const [const FullType(CustomSetTag)])),
+      'files',
+      serializers.serialize(object.files,
+          specifiedType: const FullType(
+              BuiltList, const [const FullType(LibraryItemFile)])),
     ];
-
+    if (object.tags != null) {
+      result
+        ..add('tags')
+        ..add(serializers.serialize(object.tags,
+            specifiedType: const FullType(
+                BuiltList, const [const FullType(CustomSetTag)])));
+    }
     return result;
   }
 
@@ -91,6 +97,12 @@ class _$CustomSetSerializer implements StructuredSerializer<CustomSet> {
           result.tags.replace(serializers.deserialize(value,
                   specifiedType: const FullType(
                       BuiltList, const [const FullType(CustomSetTag)]))
+              as BuiltList<Object>);
+          break;
+        case 'files':
+          result.files.replace(serializers.deserialize(value,
+                  specifiedType: const FullType(
+                      BuiltList, const [const FullType(LibraryItemFile)]))
               as BuiltList<Object>);
           break;
       }
@@ -182,16 +194,18 @@ class _$CustomSet extends CustomSet {
   final String title;
   @override
   final BuiltList<CustomSetTag> tags;
+  @override
+  final BuiltList<LibraryItemFile> files;
 
   factory _$CustomSet([void Function(CustomSetBuilder) updates]) =>
       (new CustomSetBuilder()..update(updates)).build();
 
-  _$CustomSet._({this.title, this.tags}) : super._() {
+  _$CustomSet._({this.title, this.tags, this.files}) : super._() {
     if (title == null) {
       throw new BuiltValueNullFieldError('CustomSet', 'title');
     }
-    if (tags == null) {
-      throw new BuiltValueNullFieldError('CustomSet', 'tags');
+    if (files == null) {
+      throw new BuiltValueNullFieldError('CustomSet', 'files');
     }
   }
 
@@ -205,19 +219,23 @@ class _$CustomSet extends CustomSet {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is CustomSet && title == other.title && tags == other.tags;
+    return other is CustomSet &&
+        title == other.title &&
+        tags == other.tags &&
+        files == other.files;
   }
 
   @override
   int get hashCode {
-    return $jf($jc($jc(0, title.hashCode), tags.hashCode));
+    return $jf($jc($jc($jc(0, title.hashCode), tags.hashCode), files.hashCode));
   }
 
   @override
   String toString() {
     return (newBuiltValueToStringHelper('CustomSet')
           ..add('title', title)
-          ..add('tags', tags))
+          ..add('tags', tags)
+          ..add('files', files))
         .toString();
   }
 }
@@ -234,12 +252,18 @@ class CustomSetBuilder implements Builder<CustomSet, CustomSetBuilder> {
       _$this._tags ??= new ListBuilder<CustomSetTag>();
   set tags(ListBuilder<CustomSetTag> tags) => _$this._tags = tags;
 
+  ListBuilder<LibraryItemFile> _files;
+  ListBuilder<LibraryItemFile> get files =>
+      _$this._files ??= new ListBuilder<LibraryItemFile>();
+  set files(ListBuilder<LibraryItemFile> files) => _$this._files = files;
+
   CustomSetBuilder();
 
   CustomSetBuilder get _$this {
     if (_$v != null) {
       _title = _$v.title;
       _tags = _$v.tags?.toBuilder();
+      _files = _$v.files?.toBuilder();
       _$v = null;
     }
     return this;
@@ -262,12 +286,16 @@ class CustomSetBuilder implements Builder<CustomSet, CustomSetBuilder> {
   _$CustomSet build() {
     _$CustomSet _$result;
     try {
-      _$result = _$v ?? new _$CustomSet._(title: title, tags: tags.build());
+      _$result = _$v ??
+          new _$CustomSet._(
+              title: title, tags: _tags?.build(), files: files.build());
     } catch (_) {
       String _$failedField;
       try {
         _$failedField = 'tags';
-        tags.build();
+        _tags?.build();
+        _$failedField = 'files';
+        files.build();
       } catch (e) {
         throw new BuiltValueNestedFieldError(
             'CustomSet', _$failedField, e.toString());

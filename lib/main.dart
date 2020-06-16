@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:built_collection/built_collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
           builder: (_) {
             if (_selectedTab == Destination.home.index) {
               return Center(
-                child: Text('HOME'),
+                child: Text('Welcome to HOME page'),
               );
             } else if (_selectedTab == Destination.library.index) {
               return LibraryPage();
@@ -113,46 +114,37 @@ class LibraryPage extends StatefulWidget {
   _LibraryPageState createState() => _LibraryPageState();
 }
 
-class _LibraryPageState extends State<LibraryPage> {
+class FilesList extends StatefulWidget {
+  final Function(LibraryItemFile file) onSelect;
+
+  const FilesList({Key key, this.onSelect}) : super(key: key);
+  @override
+  _FilesListState createState() => _FilesListState();
+}
+
+class _FilesListState extends State<FilesList> {
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Selector<LibraryModel, List<LibraryItemType>>(
-            selector: (_, value) => value.types,
-            builder: (_, types, child) => DefaultTabController(
-                  length: types.length,
-                  child: Column(
-                    children: <Widget>[
-                      TabBar(
-                        tabs: <Widget>[for (final type in types) _buildTab(type)],
-                      ),
-                      Expanded(
-                        child: TabBarView(
-                          children: <Widget>[for (final type in types) _buildTabView(type)],
-                        ),
-                      )
-                    ],
-                  ),
-                )),
-        Positioned(
-          right: 20,
-          bottom: 20,
-          child: FloatingActionButton(
-            child: Icon(Icons.add),
-            onPressed: () async {
-              File file = await FilePicker.getFile(type: FileType.any);
-              if (file != null) {
-                var category = await Navigator.push(context, MaterialPageRoute(builder: (_) => SelectCategoryPage()));
-                if (category != null) {
-                  context.read<LibraryModel>().addNewFile(file, category);
-                }
-              }
-            },
+    return Selector<LibraryModel, List<LibraryItemType>>(
+        selector: (_, value) => value.types,
+        builder: (_, types, child) => DefaultTabController(
+          length: types.length,
+          child: Column(
+            children: <Widget>[
+              Material(
+                elevation: 5,
+                child: TabBar(
+                  tabs: <Widget>[for (final type in types) _buildTab(type)],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: <Widget>[for (final type in types) _buildTabView(type)],
+                ),
+              )
+            ],
           ),
-        )
-      ],
-    );
+        ));
   }
 
   Widget _buildTab(LibraryItemType type) {
@@ -192,12 +184,58 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
             ),
             for (final file in item.value)
-              ListTile(
-                title: Text(file.title ?? 'Unnamed'),
+              FileItemListTile(
+                file: file,
+                onTap: () => widget.onSelect?.call(file),
               )
           ]
         ],
       ),
+    );
+  }
+}
+
+
+class _LibraryPageState extends State<LibraryPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        FilesList(),
+        Positioned(
+          right: 20,
+          bottom: 20,
+          child: FloatingActionButton(
+            child: Icon(Icons.add),
+            onPressed: () async {
+              File file = await FilePicker.getFile(type: FileType.any);
+              if (file != null) {
+                var category = await Navigator.push(context, MaterialPageRoute(builder: (_) => SelectCategoryPage()));
+                if (category != null) {
+                  context.read<LibraryModel>().addNewFile(file, category);
+                }
+              }
+            },
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class FileItemListTile extends StatelessWidget {
+  final LibraryItemFile file;
+  final Widget trailing;
+  final GestureTapCallback onTap;
+
+  const FileItemListTile({Key key, @required this.file, this.trailing, this.onTap}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(file.title ?? 'Unnamed'),
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 }
@@ -208,13 +246,11 @@ class SelectCategoryPage extends StatefulWidget {
 }
 
 class _SelectCategoryPageState extends State<SelectCategoryPage> {
-
   @override
   Widget build(BuildContext context) {
     var categories = context.watch<LibraryModel>().categories;
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
         title: Text('Select category'),
       ),
       body: Padding(
@@ -251,17 +287,13 @@ class _SelectCategoryPageState extends State<SelectCategoryPage> {
               height: 40,
             ),
             if (categories.isNotEmpty)
-              ButtonBar(
-                alignment: MainAxisAlignment.center,
-                children: <Widget>[
-                    FlatButton(
-                        onPressed: () async {
-                          await _createCategory(context);
-                        },
-                        child: Text('NEW CATEGORY')
-                    ),
-                ]
-              )
+              ButtonBar(alignment: MainAxisAlignment.center, children: <Widget>[
+                FlatButton(
+                    onPressed: () async {
+                      await _createCategory(context);
+                    },
+                    child: Text('NEW CATEGORY')),
+              ])
           ],
         ),
       ),
@@ -292,9 +324,7 @@ class _EnterTextPageState extends State<EnterTextPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-      ),
+      appBar: AppBar(),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -330,8 +360,174 @@ class SetsPage extends StatefulWidget {
 class _SetsPageState extends State<SetsPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('SETS'),
+    return Selector<CustomSetModel, List<CustomSet>>(
+        selector: (_, value) => value.sets,
+        builder: (_, sets, child) => sets.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text('You don\'t have any sets'),
+                    FlatButton(
+                        textTheme: ButtonTextTheme.accent,
+                        onPressed: () => _createSet(context),
+                        child: Text('CREATE FIRST')),
+                  ],
+                ),
+              )
+            : Stack(children: <Widget>[
+                Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: ListView(
+                        children: <Widget>[
+                          for (final set in sets)
+                            ListTile(
+                              title: Text(set.title),
+                              subtitle: Text('${set.files.length} files'),
+                              onTap: () => _openSet(context, set),
+                            )
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+                Positioned(
+                  right: 20,
+                  bottom: 20,
+                  child: FloatingActionButton(
+                    child: Icon(Icons.add),
+                    onPressed: ()  =>
+                      _createSet(context),
+                  ),
+                ),
+              ]));
+
+
+  }
+
+
+  Future _createSet(BuildContext context) async {
+    var resultSet = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CustomSetDetailPage()));
+    if (resultSet is CustomSet) {
+      context.read<CustomSetModel>().addNewCustomSet(resultSet);
+    }
+  }
+
+  Future _openSet(BuildContext context, CustomSet set) async {
+    var resultSet = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CustomSetDetailPage(set: set)));
+    if (resultSet is CustomSet) {
+      context.read<CustomSetModel>().updateCustomSets(resultSet);
+    }
+  }
+}
+
+class CustomSetDetailPage extends StatefulWidget {
+  final CustomSet set;
+
+  const CustomSetDetailPage({Key key, this.set}) : super(key: key);
+  @override
+  _CustomSetDetailPageState createState() => _CustomSetDetailPageState();
+}
+
+class _CustomSetDetailPageState extends State<CustomSetDetailPage> {
+  var titleController;
+
+  Set<LibraryItemFile> files;
+
+  @override
+  void initState() {
+    super.initState();
+    files = widget.set?.files?.toSet() ?? {};
+    titleController = TextEditingController(text: widget.set?.title);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Set'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            TextField(
+              controller: titleController,
+              autofocus: widget.set == null,
+              decoration: InputDecoration(
+                labelText: 'Title'
+              ),
+            ),
+            ButtonBar(
+              alignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text('Files', style: Theme.of(context).textTheme.headline5,),
+                FlatButton.icon(
+                  textTheme: ButtonTextTheme.accent,
+                  icon: Icon(Icons.add),
+                  label: Text('ADD FILE'),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
+                    appBar: AppBar(
+                      title: Text('Select file')
+                    ),
+                    body: FilesList(
+                      onSelect: (file) {
+                        Navigator.pop(context);
+                        setState(() => files.add(file));
+                      },
+                    ),
+                  ))),
+                )
+              ],
+            ),
+            Expanded(
+              child: files.isEmpty
+                  ? Center(child: Text('No files'))
+                  : ListView(
+                children: <Widget>[
+                  for(final file in files)
+                    FileItemListTile(
+                      file: file,
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () => setState(() => files.remove(file)),
+                      ),
+                    )
+                ],
+              ),
+            ),
+            ButtonBar(
+              buttonMinWidth: 100,
+              alignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                if (widget.set != null)
+                  ...[
+                    FlatButton(
+                      color: Colors.red,
+                      child: Text('DELETE'),
+                      onPressed: () {
+                        context.read<CustomSetModel>().removeCustomSet(widget.set);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                FlatButton(
+                  color: Theme.of(context).primaryColor,
+                  child: Text(widget.set == null ? 'CREATE' : 'SAVE'),
+                  onPressed: () {
+                    Navigator.pop(context, CustomSet((b) => b
+                        ..title = titleController.text ?? 'Untitled'
+                        ..files = ListBuilder(files)
+                    ));
+                  },
+                )
+              ],
+            )
+          ],
+        ),
+      ),
     );
   }
 }
+

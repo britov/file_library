@@ -34,7 +34,7 @@ final Serializers serializers = (_$serializers.toBuilder()
           () => ListBuilder<CustomSetTag>())
   ..addBuilderFactory(
       const FullType(
-          BuiltList, [FullType(CustomSetTag)]),
-          () => ListBuilder<CustomSetTag>())
+          BuiltList, [FullType(CustomSet)]),
+          () => ListBuilder<CustomSet>())
 )
     .build();

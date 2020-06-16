@@ -25,7 +25,7 @@ class LibraryModel with ChangeNotifier {
   List<LibraryItemType> get types => LibraryItemType.values.toList();
   List<LibraryItemFile> get files => _files.toList();
 
-  final storage = LibraryLocalNoSqlStorage();
+  final storage = LocalNoSqlStorage();
   final uuid = Uuid();
 
   init() async {
