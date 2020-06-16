@@ -4,53 +4,117 @@ import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:teacher_library/storage/storage.dart';
 import 'package:uuid/uuid.dart';
 
 part 'library.g.dart';
 
-//TODO: BUILT VALUE
 class LibraryModel with ChangeNotifier {
-  List<LibraryItemCategory> _categories = [];
-  List<LibraryItemType> _types = [];
-  List<LibraryItemFile> _files = [];
 
-  List<LibraryItemCategory> get categories => _categories;
-  List<LibraryItemType> get types => _types;
-  List<LibraryItemFile> get files => _files;
+  static const prefKey = 'library';
 
-  Map<LibraryItemType, Map<LibraryItemCategory, List<LibraryItemFile>>> get filesTree {
-    var result = <LibraryItemType, Map<LibraryItemCategory, List<LibraryItemFile>>>{};
+  LibraryModel() {
+    init();
+  }
 
-    files.forEach((file) {
-      result.update(file.type,
-              (v) => v..update(file.category, (v2) => v2..add(file), ifAbsent: () => [file]),
-              ifAbsent: () => {file.category: [file]}
-      );
+  BuiltList<LibraryItemCategory> _categories = BuiltList();
+  BuiltList<LibraryItemFile> _files = BuiltList();
+
+  List<LibraryItemCategory> get categories => _categories.toList();
+  List<LibraryItemType> get types => LibraryItemType.values.toList();
+  List<LibraryItemFile> get files => _files.toList();
+
+  final storage = LibraryLocalNoSqlStorage();
+  final uuid = Uuid();
+
+  init() async {
+    _files = (await storage.getLibraryItemFile()) ?? BuiltList();
+    _categories = (await storage.getLibraryItemCategory()) ?? BuiltList();
+  }
+
+  static Map<LibraryItemCategory, List<LibraryItemFile>> filesTree(List<LibraryItemFile> files, LibraryItemType type) {
+    var result = <LibraryItemCategory, List<LibraryItemFile>>{};
+
+    files
+        .where((file) => file.type == type)
+        .forEach((file) {
+      result.update(file.category, (v2) => v2..add(file), ifAbsent: () => [file]);
     });
 
     return result;
   }
 
   void createNewCategory(LibraryItemCategory category) {
-    _categories.add(category);
+    _categories = _categories.rebuild((b) => b
+        ..add(category)
+    );
     notifyListeners();
+    storage.saveLibraryItemCategory(categories);
   }
 
-  void addNewFile(LibraryItemFile file) {
-    _files.add(file);
+  LibraryItemCategory addNewCategory(String title) {
+    var category = LibraryItemCategory((b) => b
+        ..uuid = uuid.v1()
+        ..title = title
+    );
+    createNewCategory(category);
+    return category;
+  }
+
+  void addNewFile(File file, LibraryItemCategory category) {
+    LibraryItemType type;
+    var ext = file.path.split('.').last.toLowerCase();
+    if (ext == 'gif') {
+      type = LibraryItemType.gif;
+    } else if (['png', 'jpg', 'jpeg', 'pdf'].contains(ext)) {
+      type = LibraryItemType.picture;
+    } else {
+      type = LibraryItemType.audio;
+    }
+
+
+    var fileName = file.path.split('/').last;
+
+    var fileItem = LibraryItemFile((b) => b
+        ..localPath = file.path
+        ..uuid = uuid.v1()
+        ..type = type
+        ..title = fileName
+        ..category = category.toBuilder()
+    );
+
+    addNewFileItem(fileItem);
+  }
+
+  void addNewFileItem(LibraryItemFile file) {
+    addNewFileItems([file]);
+  }
+
+  void addNewFileItems(List<LibraryItemFile> files) {
+    _files = _files.rebuild((b) => b
+        ..addAll(files)
+    );
     notifyListeners();
+    storage.saveLibraryItemFile(files);
   }
 
   void updateFile(LibraryItemFile file) {
     var index = _files.indexWhere((element) => element.uuid == file.uuid);
-    _files.removeAt(index);
-    _files.insert(index, file);
+    _files = _files.rebuild((b) => b
+        ..removeAt(index)
+        ..insert(index, file)
+    );
     notifyListeners();
+    storage.saveLibraryItemFile(files);
   }
 
   void removeFile(LibraryItemFile file) {
-    _files.removeWhere((element) => element.uuid == file.uuid);
+    _files = _files.rebuild((b) => b
+        ..removeWhere((element) => element.uuid == file.uuid)
+    );
     notifyListeners();
+    storage.saveLibraryItemFile(files);
   }
 }
 
@@ -67,7 +131,7 @@ class LibraryItemType extends EnumClass {
 }
 
 abstract class LibraryItemCategory implements Built<LibraryItemCategory, LibraryItemCategoryBuilder> {
-  Uuid get uuid;
+  String get uuid;
   String get title;
 
   LibraryItemCategory._();
@@ -78,12 +142,12 @@ abstract class LibraryItemCategory implements Built<LibraryItemCategory, Library
 }
 
 abstract class LibraryItemFile implements Built<LibraryItemFile, LibraryItemFileBuilder> {
-  Uuid get uuid;
-  String get title;
+  String get uuid;
+  @nullable String get title;
   LibraryItemType get type;
   LibraryItemCategory get category;
-  File get file;
-  String get url;
+  @nullable String get localPath;
+  @nullable String get remoteUrl;
 
   LibraryItemFile._();
 

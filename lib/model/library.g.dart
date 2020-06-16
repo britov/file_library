@@ -72,7 +72,7 @@ class _$LibraryItemCategorySerializer
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object>[
       'uuid',
-      serializers.serialize(object.uuid, specifiedType: const FullType(Uuid)),
+      serializers.serialize(object.uuid, specifiedType: const FullType(String)),
       'title',
       serializers.serialize(object.title,
           specifiedType: const FullType(String)),
@@ -95,7 +95,7 @@ class _$LibraryItemCategorySerializer
       switch (key) {
         case 'uuid':
           result.uuid = serializers.deserialize(value,
-              specifiedType: const FullType(Uuid)) as Uuid;
+              specifiedType: const FullType(String)) as String;
           break;
         case 'title':
           result.title = serializers.deserialize(value,
@@ -120,22 +120,32 @@ class _$LibraryItemFileSerializer
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object>[
       'uuid',
-      serializers.serialize(object.uuid, specifiedType: const FullType(Uuid)),
-      'title',
-      serializers.serialize(object.title,
-          specifiedType: const FullType(String)),
+      serializers.serialize(object.uuid, specifiedType: const FullType(String)),
       'type',
       serializers.serialize(object.type,
           specifiedType: const FullType(LibraryItemType)),
       'category',
       serializers.serialize(object.category,
           specifiedType: const FullType(LibraryItemCategory)),
-      'file',
-      serializers.serialize(object.file, specifiedType: const FullType(File)),
-      'url',
-      serializers.serialize(object.url, specifiedType: const FullType(String)),
     ];
-
+    if (object.title != null) {
+      result
+        ..add('title')
+        ..add(serializers.serialize(object.title,
+            specifiedType: const FullType(String)));
+    }
+    if (object.localPath != null) {
+      result
+        ..add('localPath')
+        ..add(serializers.serialize(object.localPath,
+            specifiedType: const FullType(String)));
+    }
+    if (object.remoteUrl != null) {
+      result
+        ..add('remoteUrl')
+        ..add(serializers.serialize(object.remoteUrl,
+            specifiedType: const FullType(String)));
+    }
     return result;
   }
 
@@ -153,7 +163,7 @@ class _$LibraryItemFileSerializer
       switch (key) {
         case 'uuid':
           result.uuid = serializers.deserialize(value,
-              specifiedType: const FullType(Uuid)) as Uuid;
+              specifiedType: const FullType(String)) as String;
           break;
         case 'title':
           result.title = serializers.deserialize(value,
@@ -169,12 +179,12 @@ class _$LibraryItemFileSerializer
                   specifiedType: const FullType(LibraryItemCategory))
               as LibraryItemCategory);
           break;
-        case 'file':
-          result.file = serializers.deserialize(value,
-              specifiedType: const FullType(File)) as File;
+        case 'localPath':
+          result.localPath = serializers.deserialize(value,
+              specifiedType: const FullType(String)) as String;
           break;
-        case 'url':
-          result.url = serializers.deserialize(value,
+        case 'remoteUrl':
+          result.remoteUrl = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String;
           break;
       }
@@ -186,7 +196,7 @@ class _$LibraryItemFileSerializer
 
 class _$LibraryItemCategory extends LibraryItemCategory {
   @override
-  final Uuid uuid;
+  final String uuid;
   @override
   final String title;
 
@@ -238,9 +248,9 @@ class LibraryItemCategoryBuilder
     implements Builder<LibraryItemCategory, LibraryItemCategoryBuilder> {
   _$LibraryItemCategory _$v;
 
-  Uuid _uuid;
-  Uuid get uuid => _$this._uuid;
-  set uuid(Uuid uuid) => _$this._uuid = uuid;
+  String _uuid;
+  String get uuid => _$this._uuid;
+  set uuid(String uuid) => _$this._uuid = uuid;
 
   String _title;
   String get title => _$this._title;
@@ -281,7 +291,7 @@ class LibraryItemCategoryBuilder
 
 class _$LibraryItemFile extends LibraryItemFile {
   @override
-  final Uuid uuid;
+  final String uuid;
   @override
   final String title;
   @override
@@ -289,33 +299,29 @@ class _$LibraryItemFile extends LibraryItemFile {
   @override
   final LibraryItemCategory category;
   @override
-  final File file;
+  final String localPath;
   @override
-  final String url;
+  final String remoteUrl;
 
   factory _$LibraryItemFile([void Function(LibraryItemFileBuilder) updates]) =>
       (new LibraryItemFileBuilder()..update(updates)).build();
 
   _$LibraryItemFile._(
-      {this.uuid, this.title, this.type, this.category, this.file, this.url})
+      {this.uuid,
+      this.title,
+      this.type,
+      this.category,
+      this.localPath,
+      this.remoteUrl})
       : super._() {
     if (uuid == null) {
       throw new BuiltValueNullFieldError('LibraryItemFile', 'uuid');
-    }
-    if (title == null) {
-      throw new BuiltValueNullFieldError('LibraryItemFile', 'title');
     }
     if (type == null) {
       throw new BuiltValueNullFieldError('LibraryItemFile', 'type');
     }
     if (category == null) {
       throw new BuiltValueNullFieldError('LibraryItemFile', 'category');
-    }
-    if (file == null) {
-      throw new BuiltValueNullFieldError('LibraryItemFile', 'file');
-    }
-    if (url == null) {
-      throw new BuiltValueNullFieldError('LibraryItemFile', 'url');
     }
   }
 
@@ -335,8 +341,8 @@ class _$LibraryItemFile extends LibraryItemFile {
         title == other.title &&
         type == other.type &&
         category == other.category &&
-        file == other.file &&
-        url == other.url;
+        localPath == other.localPath &&
+        remoteUrl == other.remoteUrl;
   }
 
   @override
@@ -345,8 +351,8 @@ class _$LibraryItemFile extends LibraryItemFile {
         $jc(
             $jc($jc($jc($jc(0, uuid.hashCode), title.hashCode), type.hashCode),
                 category.hashCode),
-            file.hashCode),
-        url.hashCode));
+            localPath.hashCode),
+        remoteUrl.hashCode));
   }
 
   @override
@@ -356,8 +362,8 @@ class _$LibraryItemFile extends LibraryItemFile {
           ..add('title', title)
           ..add('type', type)
           ..add('category', category)
-          ..add('file', file)
-          ..add('url', url))
+          ..add('localPath', localPath)
+          ..add('remoteUrl', remoteUrl))
         .toString();
   }
 }
@@ -366,9 +372,9 @@ class LibraryItemFileBuilder
     implements Builder<LibraryItemFile, LibraryItemFileBuilder> {
   _$LibraryItemFile _$v;
 
-  Uuid _uuid;
-  Uuid get uuid => _$this._uuid;
-  set uuid(Uuid uuid) => _$this._uuid = uuid;
+  String _uuid;
+  String get uuid => _$this._uuid;
+  set uuid(String uuid) => _$this._uuid = uuid;
 
   String _title;
   String get title => _$this._title;
@@ -384,13 +390,13 @@ class LibraryItemFileBuilder
   set category(LibraryItemCategoryBuilder category) =>
       _$this._category = category;
 
-  File _file;
-  File get file => _$this._file;
-  set file(File file) => _$this._file = file;
+  String _localPath;
+  String get localPath => _$this._localPath;
+  set localPath(String localPath) => _$this._localPath = localPath;
 
-  String _url;
-  String get url => _$this._url;
-  set url(String url) => _$this._url = url;
+  String _remoteUrl;
+  String get remoteUrl => _$this._remoteUrl;
+  set remoteUrl(String remoteUrl) => _$this._remoteUrl = remoteUrl;
 
   LibraryItemFileBuilder();
 
@@ -400,8 +406,8 @@ class LibraryItemFileBuilder
       _title = _$v.title;
       _type = _$v.type;
       _category = _$v.category?.toBuilder();
-      _file = _$v.file;
-      _url = _$v.url;
+      _localPath = _$v.localPath;
+      _remoteUrl = _$v.remoteUrl;
       _$v = null;
     }
     return this;
@@ -430,8 +436,8 @@ class LibraryItemFileBuilder
               title: title,
               type: type,
               category: category.build(),
-              file: file,
-              url: url);
+              localPath: localPath,
+              remoteUrl: remoteUrl);
     } catch (_) {
       String _$failedField;
       try {

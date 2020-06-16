@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:teacher_library/model/custom_set.dart';
+import 'model/library.dart';
 
 void main() {
   runApp(MyApp());
@@ -24,16 +29,27 @@ class Destination {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => LibraryModel(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CustomSetModel(),
+          lazy: false,
+        )
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+            primarySwatch: Colors.blue,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            appBarTheme: AppBarTheme(elevation: 0),
+            tabBarTheme: TabBarTheme(labelColor: Colors.black)),
+        initialRoute: Routes.home,
+        routes: {Routes.home: (_) => MyHomePage(title: 'Flutter Demo Home Page')},
       ),
-      initialRoute: Routes.home,
-      routes: {
-        Routes.home: (_) => MyHomePage(title: 'Flutter Demo Home Page')
-      },
     );
   }
 }
@@ -48,13 +64,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   int _selectedTab = Destination.home.index;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: Text("App"),
+      ),
       body: AnimatedSwitcher(
         duration: Duration(seconds: 2),
         child: Builder(
@@ -87,13 +104,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   BottomNavigationBarItem _buildBottomNavigationBarItem(Destination destination) {
-    return BottomNavigationBarItem(
-      icon: Icon(destination.icon),
-      title: Text(destination.title)
-    );
+    return BottomNavigationBarItem(icon: Icon(destination.icon), title: Text(destination.title));
   }
 }
-
 
 class LibraryPage extends StatefulWidget {
   @override
@@ -103,7 +116,205 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('LIBRARY'),);
+    return Stack(
+      children: <Widget>[
+        Selector<LibraryModel, List<LibraryItemType>>(
+            selector: (_, value) => value.types,
+            builder: (_, types, child) => DefaultTabController(
+                  length: types.length,
+                  child: Column(
+                    children: <Widget>[
+                      TabBar(
+                        tabs: <Widget>[for (final type in types) _buildTab(type)],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: <Widget>[for (final type in types) _buildTabView(type)],
+                        ),
+                      )
+                    ],
+                  ),
+                )),
+        Positioned(
+          right: 20,
+          bottom: 20,
+          child: FloatingActionButton(
+            child: Icon(Icons.add),
+            onPressed: () async {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => AddFilePage()));
+            },
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildTab(LibraryItemType type) {
+    String text;
+    IconData icon;
+    switch (type) {
+      case LibraryItemType.audio:
+        text = 'AUDIO';
+        icon = Icons.audiotrack;
+        break;
+      case LibraryItemType.gif:
+        text = 'GIF';
+        icon = Icons.gif;
+        break;
+      case LibraryItemType.picture:
+        text = 'PICTURE';
+        icon = Icons.image;
+        break;
+    }
+    return Tab(
+      text: text,
+      icon: Icon(icon),
+    );
+  }
+
+  Widget _buildTabView(LibraryItemType type) {
+    return Selector<LibraryModel, List<LibraryItemFile>>(
+      selector: (_, value) => value.files,
+      shouldRebuild: (a, b) => a != b,
+      builder: (_, files, __) => ListView(
+        children: <Widget>[
+          for (final item in LibraryModel.filesTree(files, type).entries) ...[
+            ListTile(
+              title: Text(
+                item.key.title,
+                style: Theme.of(context).textTheme.headline4,
+              ),
+            ),
+            for (final file in item.value)
+              ListTile(
+                title: Text(file.title ?? 'Unnamed'),
+              )
+          ]
+        ],
+      ),
+    );
+  }
+}
+
+class AddFilePage extends StatefulWidget {
+  @override
+  _AddFilePageState createState() => _AddFilePageState();
+}
+
+class _AddFilePageState extends State<AddFilePage> {
+
+  @override
+  Widget build(BuildContext context) {
+    var categories = context.watch<LibraryModel>().categories;
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        title: Text('Select category'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            Expanded(
+              child: categories.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text('You don\'t have any categories'),
+                          FlatButton(
+                              textTheme: ButtonTextTheme.accent,
+                              onPressed: () async {
+                                await _createCategory(context);
+                              },
+                              child: Text('CREATE FIRST')),
+                        ],
+                      ),
+                    )
+                  : ListView(children: <Widget>[
+                      for (final category in categories)
+                        ListTile(
+                          onTap: () async {
+                            File file = await FilePicker.getFile(type: FileType.any);
+                            context.read<LibraryModel>().addNewFile(file, category);
+                            Navigator.pop(context);
+                          },
+                          title: Text(category.title),
+                        ),
+                    ]),
+            ),
+            SizedBox(
+              height: 40,
+            ),
+            if (categories.isNotEmpty)
+              ButtonBar(
+                alignment: MainAxisAlignment.center,
+                children: <Widget>[
+                    FlatButton(
+                        onPressed: () async {
+                          await _createCategory(context);
+                        },
+                        child: Text('NEW CATEGORY')
+                    ),
+                ]
+              )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future _createCategory(BuildContext context) async {
+    var category =
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => EnterTextPage(label: 'Category title')));
+    if (category is String && category.isNotEmpty) {
+      var categoryItem = context.read<LibraryModel>().addNewCategory(category);
+    }
+  }
+}
+
+class EnterTextPage extends StatefulWidget {
+  final String label;
+
+  const EnterTextPage({Key key, @required this.label}) : super(key: key);
+
+  @override
+  _EnterTextPageState createState() => _EnterTextPageState();
+}
+
+class _EnterTextPageState extends State<EnterTextPage> {
+  final textController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                controller: textController,
+                decoration: InputDecoration(labelText: widget.label),
+              ),
+              SizedBox(
+                height: 40,
+              ),
+              ButtonBar(
+                alignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  RaisedButton(child: Text("NEXT"), onPressed: () => Navigator.pop(context, textController.text))
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -115,7 +326,8 @@ class SetsPage extends StatefulWidget {
 class _SetsPageState extends State<SetsPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('SETS'),);
+    return Center(
+      child: Text('SETS'),
+    );
   }
 }
-

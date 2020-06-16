@@ -7,6 +7,9 @@ part 'custom_set.g.dart';
 
 class CustomSetModel with ChangeNotifier {
 
+  List<CustomSetTag> _tags = [];
+  List<CustomSet> _sets = [];
+
 }
 
 abstract class CustomSetTag implements Built<CustomSetTag, CustomSetTagBuilder> {
